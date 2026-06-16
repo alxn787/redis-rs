@@ -2,11 +2,10 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use std::process::Command;
+use std::ptr::null;
 
-fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    println!("Logs from your program will appear here!");
-
+fn main() { 
+    
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
 
     for stream in listener.incoming() {
@@ -29,14 +28,30 @@ fn handle_connection(mut stream: TcpStream) {
             break;
         }
         let request = String::from_utf8_lossy(&buffer[..bytes_len]);
-        println!("Request: {}", request.to_ascii_uppercase().trim());
+        let (command, key, _value) = parse_command(&request);
     
-        let command = request.to_ascii_uppercase().trim().to_string();
-        if command.contains("PING") {
-            stream.write_all(b"+PONG\r\n".as_ref()).unwrap();
-            println!("Response:PONG");
-        } else {
-            stream.write_all(b"+PONG\r\n".as_ref()).unwrap();
+        match command {
+            "PING" => {
+                stream.write_all(b"+PONG\r\n".as_ref()).unwrap();
+                println!("Response:PONG");
+            }
+            "ECHO" => {
+                let response = format!("${}\r\n{}\r\n", key.len(), key);
+                stream.write_all(response.as_bytes()).unwrap();
+                println!("Response: {}", response);
+            }
+            _ => {
+                stream.write_all(b"-ERR unknown command\r\n".as_ref()).unwrap();
+                println!("Response: -ERR unknown command");
+            }
         }
     }
+}
+
+fn parse_command(command: &str) -> (&str, &str, &str) {
+    let commands = command.split("\r\n").collect::<Vec<&str>>();
+    let command = commands.get(2).copied().unwrap_or("");
+    let key = commands.get(4).copied().unwrap_or("");
+    let value = commands.get(6).copied().unwrap_or("");
+    (command, key, value)
 }

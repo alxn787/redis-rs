@@ -1,0 +1,2 @@
+curl -fsSL https://codecrafters.io/install.sh | bash 
+codecrafters ping
