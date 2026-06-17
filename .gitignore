@@ -11,3 +11,5 @@ README.md
 *.pdb
 
 .codecrafters/
+codecrafters.yml
+your_program.sh
